@@ -110,6 +110,60 @@ final class NotificationManager {
         logger.info("Cancelled notifications for app \(appID)")
     }
 
+    // MARK: - Downtime Notifications
+
+    /// Sends a notification when a downtime window starts.
+    func scheduleDowntimeStartNotification(windowID: UUID, timeRange: String) {
+        let content = UNMutableNotificationContent()
+        content.title = "🌙 Downtime Started"
+        content.body = "All apps are now blocked (\(timeRange)). Only your allowed apps remain accessible."
+        content.sound = .default
+
+        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 1, repeats: false)
+        let request = UNNotificationRequest(
+            identifier: windowID.uuidString + AppConstants.notificationDowntimeStartSuffix,
+            content: content,
+            trigger: trigger
+        )
+
+        center.add(request) { [weak self] error in
+            if let error { self?.logger.error("Failed to schedule downtime start notification: \(error.localizedDescription)") }
+        }
+
+        logger.info("Scheduled downtime start notification for \(timeRange)")
+    }
+
+    /// Sends a notification when a downtime window ends.
+    func scheduleDowntimeEndNotification(windowID: UUID, timeRange: String) {
+        let content = UNMutableNotificationContent()
+        content.title = "☀️ Downtime Ended"
+        content.body = "The downtime window (\(timeRange)) has ended. All apps are accessible again."
+        content.sound = .default
+
+        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 1, repeats: false)
+        let request = UNNotificationRequest(
+            identifier: windowID.uuidString + AppConstants.notificationDowntimeEndSuffix,
+            content: content,
+            trigger: trigger
+        )
+
+        center.add(request) { [weak self] error in
+            if let error { self?.logger.error("Failed to schedule downtime end notification: \(error.localizedDescription)") }
+        }
+
+        logger.info("Scheduled downtime end notification for \(timeRange)")
+    }
+
+    /// Cancels downtime notifications for a specific window.
+    func cancelDowntimeNotifications(for windowID: UUID) {
+        let ids = [
+            windowID.uuidString + AppConstants.notificationDowntimeStartSuffix,
+            windowID.uuidString + AppConstants.notificationDowntimeEndSuffix
+        ]
+        center.removePendingNotificationRequests(withIdentifiers: ids)
+        center.removeDeliveredNotifications(withIdentifiers: ids)
+    }
+
     /// Cancels all pending OpenGuard notifications.
     func cancelAllNotifications() {
         center.removeAllPendingNotificationRequests()

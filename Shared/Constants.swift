@@ -28,6 +28,8 @@ enum AppConstants {
     static let notificationUnlockedSuffix = "-unlocked"
     static let notificationWarningSuffix = "-warning"
     static let notificationBlockedSuffix = "-blocked"
+    static let notificationDowntimeStartSuffix = "-downtime-start"
+    static let notificationDowntimeEndSuffix = "-downtime-end"
 
     // MARK: - Per-Open Relock Activity
     /// Prefix for DeviceActivity names used to re-shield apps when open windows expire.

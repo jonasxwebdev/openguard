@@ -1,5 +1,6 @@
 import SwiftUI
 import FamilyControls
+import ManagedSettings
 
 /// Detail/edit view for a single downtime window.
 struct DowntimeDetailView: View {
@@ -16,17 +17,20 @@ struct DowntimeDetailView: View {
     @State private var showingExclusionPicker = false
     @State private var exclusionSelection = FamilyActivitySelection()
 
-    private let weekdays: [(Int, String)] = {
+    private var weekdays: [(Int, String)] {
         let symbols = Calendar.current.weekdaySymbols // Sunday first
         // Reorder to Monday first for display
         let reordered = Array(2...7) + [1]
         return reordered.map { ($0, symbols[$0 - 1]) }
-    }()
+    }
 
     init(window: DowntimeWindow, isNew: Bool = false) {
         _window = State(initialValue: window)
+        self.isNew = isNew
         _isEveryDay = State(initialValue: window.isEveryDay)
         _selectedDays = State(initialValue: window.activeDays)
+        _showingExclusionPicker = State(initialValue: false)
+        _exclusionSelection = State(initialValue: FamilyActivitySelection())
 
         // Convert hour/minute to Date for DatePicker
         let calendar = Calendar.current
@@ -72,14 +76,23 @@ struct DowntimeDetailView: View {
 
             // MARK: - Allowed Apps (Exclusions)
             Section {
-                if window.excludedAppNames.isEmpty {
+                if window.excludedAppTokensData.isEmpty {
                     Text("All apps will be blocked during this time.")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 } else {
-                    ForEach(Array(zip(window.excludedAppNames, window.excludedAppNames.indices)), id: \.1) { name, index in
+                    ForEach(Array(window.excludedAppTokensData.enumerated()), id: \.offset) { index, tokenData in
                         HStack {
-                            Text(name)
+                            if let token = try? JSONDecoder().decode(ApplicationToken.self, from: tokenData) {
+                                Label(token)
+                                    .labelStyle(.titleAndIcon)
+                                    .font(.body)
+                                    .lineLimit(1)
+                            } else {
+                                Label(window.excludedAppNames.indices.contains(index) ? window.excludedAppNames[index] : "Unknown App", systemImage: "app.fill")
+                                    .font(.body)
+                                    .lineLimit(1)
+                            }
                             Spacer()
                             Button {
                                 removeExcludedApp(at: index)
@@ -87,6 +100,7 @@ struct DowntimeDetailView: View {
                                 Image(systemName: "minus.circle.fill")
                                     .foregroundStyle(.red)
                             }
+                            .buttonStyle(.plain)
                         }
                     }
                 }

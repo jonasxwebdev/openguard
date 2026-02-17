@@ -17,7 +17,6 @@
 		25C4B343D6C75714B7FF833A /* OpenGuardApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C2224E93A3FA79080A865A0 /* OpenGuardApp.swift */; };
 		35AF23A83A872D75E233E111 /* ShieldConfigurationDataSourceImpl.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A14F00F79A6F11952234722 /* ShieldConfigurationDataSourceImpl.swift */; };
 		36F7DB888CAF0FE02C0AF946 /* Constants.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E4BB3C840A4F555E2188A0A /* Constants.swift */; };
-		3D6489877FBA86B0C9CCC4DF /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 170B33676058574C84FE0901 /* LaunchScreen.storyboard */; };
 		4242930C0AB527B52D7F9CD9 /* ShieldManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = FAA408FD977B50A1EC80B54D /* ShieldManager.swift */; };
 		4D19F343F8A0BFC12D64B8A2 /* CloudSyncManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A885674EECC02CBAB8E13241 /* CloudSyncManager.swift */; };
 		6527C2A6B01310908462D20B /* Constants.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E4BB3C840A4F555E2188A0A /* Constants.swift */; };
@@ -98,7 +97,6 @@
 
 /* Begin PBXFileReference section */
 		02BA1A8FFC1AE731EE1F4387 /* DeviceActivityMonitorExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = DeviceActivityMonitorExtension.entitlements; sourceTree = "<group>"; };
-		170B33676058574C84FE0901 /* LaunchScreen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = LaunchScreen.storyboard; sourceTree = "<group>"; };
 		2AA16E462DD23E4B5997E1F5 /* ShieldActionExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = ShieldActionExtension.entitlements; sourceTree = "<group>"; };
 		2C33C22FCFE0D5E830A4354B /* BlockedAppData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BlockedAppData.swift; sourceTree = "<group>"; };
 		31C6EA4B0D08B44ECA0768BE /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
@@ -294,7 +292,6 @@
 				46B7B0AB59E7B16068EE2DA4 /* Views */,
 				97A85F5BD6DDE8379B0B9E9C /* Assets.xcassets */,
 				F9A742EC470956C77BB2EEFC /* Info.plist */,
-				170B33676058574C84FE0901 /* LaunchScreen.storyboard */,
 				691E686A562ACAF16F978732 /* OpenGuard.entitlements */,
 			);
 			path = OpenGuard;
@@ -396,16 +393,16 @@
 				LastUpgradeCheck = 1600;
 				TargetAttributes = {
 					A47F20EFA336740693F075FA = {
-						DevelopmentTeam = "";
+						DevelopmentTeam = 296KUW3HXV;
 					};
 					A688F0278086DD915BF15C9A = {
-						DevelopmentTeam = "";
+						DevelopmentTeam = 296KUW3HXV;
 					};
 					BC064FD4090790C8BD232A55 = {
-						DevelopmentTeam = "";
+						DevelopmentTeam = 296KUW3HXV;
 					};
 					F2A26523A68578D57A6D70D8 = {
-						DevelopmentTeam = "";
+						DevelopmentTeam = 296KUW3HXV;
 					};
 				};
 			};
@@ -437,7 +434,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				7112A7AA57217CD502712913 /* Assets.xcassets in Resources */,
-				3D6489877FBA86B0C9CCC4DF /* LaunchScreen.storyboard in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -606,7 +602,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = 296KUW3HXV;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
@@ -705,7 +701,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = 296KUW3HXV;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;

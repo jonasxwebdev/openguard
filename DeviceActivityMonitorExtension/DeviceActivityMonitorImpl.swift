@@ -1,3 +1,4 @@
+import Foundation
 import DeviceActivity
 import ManagedSettings
 import os.log
@@ -157,6 +158,13 @@ class DeviceActivityMonitorImpl: DeviceActivityMonitor {
 
         let excludedTokens = window.excludedTokens()
         ShieldManager.shared.applyDowntimeShields(excluding: excludedTokens)
+
+        // Send notification
+        NotificationManager.shared.scheduleDowntimeStartNotification(
+            windowID: window.id,
+            timeRange: window.formattedTimeRange
+        )
+
         logger.info("Downtime shields applied, excluding \(excludedTokens.count) app(s)")
     }
 
@@ -165,7 +173,18 @@ class DeviceActivityMonitorImpl: DeviceActivityMonitor {
         let windowID = String(activity.rawValue.dropFirst(AppConstants.downtimeActivityPrefix.count))
         logger.info("Downtime ended for window: \(windowID)")
 
+        let downtimeData = SharedDataStore.shared.loadDowntime()
+        let window = downtimeData.windows.first(where: { $0.id.uuidString == windowID })
+
         // Check if any other downtime window is still active before removing shields
         ShieldManager.shared.reapplyDowntimeIfNeeded()
+
+        // Send notification
+        if let window = window {
+            NotificationManager.shared.scheduleDowntimeEndNotification(
+                windowID: window.id,
+                timeRange: window.formattedTimeRange
+            )
+        }
     }
 }

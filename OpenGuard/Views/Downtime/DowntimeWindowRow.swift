@@ -1,4 +1,6 @@
 import SwiftUI
+import FamilyControls
+import ManagedSettings
 
 /// A single row in the downtime list, showing time range, days, and enabled toggle.
 struct DowntimeWindowRow: View {
@@ -16,10 +18,15 @@ struct DowntimeWindowRow: View {
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
 
-                if !window.excludedAppNames.isEmpty {
-                    Text("\(window.excludedAppNames.count) app(s) allowed")
-                        .font(.caption)
-                        .foregroundStyle(.green)
+                if !window.excludedAppTokensData.isEmpty {
+                    HStack(spacing: 4) {
+                        Image(systemName: "checkmark.shield")
+                            .font(.caption)
+                            .foregroundStyle(.green)
+                        Text("\(window.excludedAppTokensData.count) app(s) allowed")
+                            .font(.caption)
+                            .foregroundStyle(.green)
+                    }
                 }
             }
 
