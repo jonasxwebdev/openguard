@@ -24,6 +24,7 @@
 		6ED1F5E6258B5D72C5839BC6 /* SharedDataStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE1334CFC7F35F52FD758A80 /* SharedDataStore.swift */; };
 		7112A7AA57217CD502712913 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 97A85F5BD6DDE8379B0B9E9C /* Assets.xcassets */; };
 		7ADEEFA472BA2AF8B6332FDA /* NotificationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7ED8847E49E4CD6FA2525AF1 /* NotificationManager.swift */; };
+		7BB67B4009537E80DD673F3B /* AppLogo.png in Resources */ = {isa = PBXBuildFile; fileRef = 3A1A6DB18B66FF3CB84F912D /* AppLogo.png */; };
 		7C2C05B050C24DBCBDAB9EFB /* DeviceActivityMonitorImpl.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87074666D138249794E59361 /* DeviceActivityMonitorImpl.swift */; };
 		7C76D10C1A54738F9A2170E2 /* SharedDataStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE1334CFC7F35F52FD758A80 /* SharedDataStore.swift */; };
 		8619055103D7C6E65F235391 /* DowntimeWindowRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 36688612AC93971AF6FB9F90 /* DowntimeWindowRow.swift */; };
@@ -102,6 +103,7 @@
 		31C6EA4B0D08B44ECA0768BE /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		346A4E36FCBED9410E95A183 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		36688612AC93971AF6FB9F90 /* DowntimeWindowRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DowntimeWindowRow.swift; sourceTree = "<group>"; };
+		3A1A6DB18B66FF3CB84F912D /* AppLogo.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = AppLogo.png; sourceTree = "<group>"; };
 		3C2224E93A3FA79080A865A0 /* OpenGuardApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenGuardApp.swift; sourceTree = "<group>"; };
 		3EE555763A2CB6F32C384B10 /* ShieldConfigurationExtension.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = ShieldConfigurationExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		4682D616A7C27FE37106694C /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
@@ -275,6 +277,7 @@
 		E0B34990F056CC3622B6D297 /* ShieldConfigurationExtension */ = {
 			isa = PBXGroup;
 			children = (
+				3A1A6DB18B66FF3CB84F912D /* AppLogo.png */,
 				D56A087DC7446BB2165B3098 /* Info.plist */,
 				5A14F00F79A6F11952234722 /* ShieldConfigurationDataSourceImpl.swift */,
 				6503557744809F961A01E362 /* ShieldConfigurationExtension.entitlements */,
@@ -371,6 +374,7 @@
 			buildConfigurationList = F1337F408A1151CFEE000E13 /* Build configuration list for PBXNativeTarget "ShieldConfigurationExtension" */;
 			buildPhases = (
 				1D983E837E5DDA8559ECDA2C /* Sources */,
+				44F61CEFFC9D31F4904F0B37 /* Resources */,
 			);
 			buildRules = (
 			);
@@ -434,6 +438,14 @@
 			buildActionMask = 2147483647;
 			files = (
 				7112A7AA57217CD502712913 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		44F61CEFFC9D31F4904F0B37 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				7BB67B4009537E80DD673F3B /* AppLogo.png in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

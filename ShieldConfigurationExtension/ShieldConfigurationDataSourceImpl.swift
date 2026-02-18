@@ -49,7 +49,7 @@ class ShieldConfigurationDataSourceImpl: ShieldConfigurationDataSource {
         logger.info("Shield config: matched=\(matchedApp != nil), total apps=\(apps.count)")
 
         if let app = matchedApp {
-            return buildConfiguration(for: app)
+            return buildConfiguration(for: app, applicationName: application.localizedDisplayName)
         } else {
             // Fallback: show generic shield with open button as safety net
             return buildFallbackConfiguration(appCount: apps.count)
@@ -74,24 +74,25 @@ class ShieldConfigurationDataSourceImpl: ShieldConfigurationDataSource {
 
     // MARK: - Configuration Builders
 
-    private func buildConfiguration(for app: BlockedApp) -> ShieldConfiguration {
+    private func buildConfiguration(for app: BlockedApp, applicationName: String? = nil) -> ShieldConfiguration {
         let title = ShieldConfiguration.Label(
             text: "This app is currently blocked",
             color: .white
         )
 
+        let opensRemaining = app.opensRemaining
+        let name = applicationName ?? app.displayName
+
         let subtitle = ShieldConfiguration.Label(
-            text: app.displayName,
+            text: "\(name)\n\(opensRemaining)/\(app.opensPerDay) opens left",
             color: UIColor.lightGray
         )
 
-        let opensRemaining = app.opensRemaining
-
-        // Primary button: "Open (X/Y left)" — only if opens remain
+        // Primary button: "Open" — only if opens remain
         let primaryButton: ShieldConfiguration.Label?
         if opensRemaining > 0 {
             primaryButton = ShieldConfiguration.Label(
-                text: "Open (\(opensRemaining)/\(app.opensPerDay) left)",
+                text: "Open",
                 color: .white
             )
         } else {
@@ -101,17 +102,25 @@ class ShieldConfigurationDataSourceImpl: ShieldConfigurationDataSource {
         // Secondary button: always shown
         let secondaryButton = ShieldConfiguration.Label(
             text: "Get Back to Reality",
-            color: UIColor.systemBlue
+            color: UIColor(red: 0.2, green: 0.404, blue: 0.231, alpha: 1.0)
         )
+
+        let bundle = Bundle(for: ShieldConfigurationDataSourceImpl.self)
+        let appLogo: UIImage?
+        if let logoURL = bundle.url(forResource: "AppLogo", withExtension: "png") {
+            appLogo = UIImage(contentsOfFile: logoURL.path)
+        } else {
+            appLogo = UIImage(systemName: "lock.shield.fill")
+        }
 
         return ShieldConfiguration(
             backgroundBlurStyle: .systemThickMaterial,
             backgroundColor: UIColor.black.withAlphaComponent(0.85),
-            icon: UIImage(systemName: "lock.shield.fill"),
+            icon: appLogo,
             title: title,
             subtitle: subtitle,
             primaryButtonLabel: primaryButton,
-            primaryButtonBackgroundColor: opensRemaining > 0 ? UIColor.systemGreen : nil,
+            primaryButtonBackgroundColor: opensRemaining > 0 ? UIColor(red: 1.0, green: 0.0, blue: 0.208, alpha: 1.0) : nil,
             secondaryButtonLabel: secondaryButton
         )
     }
@@ -130,13 +139,21 @@ class ShieldConfigurationDataSourceImpl: ShieldConfigurationDataSource {
         // Always show the secondary button
         let secondaryButton = ShieldConfiguration.Label(
             text: "Get Back to Reality",
-            color: UIColor.systemBlue
+            color: UIColor(red: 0.2, green: 0.404, blue: 0.231, alpha: 1.0)
         )
+
+        let bundle = Bundle(for: ShieldConfigurationDataSourceImpl.self)
+        let appLogo: UIImage?
+        if let logoURL = bundle.url(forResource: "AppLogo", withExtension: "png") {
+            appLogo = UIImage(contentsOfFile: logoURL.path)
+        } else {
+            appLogo = UIImage(systemName: "lock.shield.fill")
+        }
 
         return ShieldConfiguration(
             backgroundBlurStyle: .systemThickMaterial,
             backgroundColor: UIColor.black.withAlphaComponent(0.85),
-            icon: UIImage(systemName: "lock.shield.fill"),
+            icon: appLogo,
             title: title,
             subtitle: subtitle,
             primaryButtonLabel: nil,

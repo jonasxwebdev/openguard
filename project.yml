@@ -58,9 +58,12 @@ targets:
             - path: ShieldConfigurationExtension
               excludes:
                   - "**/.DS_Store"
+                  - "**/AppLogo.png"
             - path: Shared
               excludes:
                   - "**/.DS_Store"
+            - path: ShieldConfigurationExtension/AppLogo.png
+              buildPhase: resources
         settings:
             base:
                 PRODUCT_BUNDLE_IDENTIFIER: com.jonasreidel.openguard.ShieldConfiguration
