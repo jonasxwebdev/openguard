@@ -56,4 +56,5 @@ playground.xcworkspace
 
 # XcodeGen (keep project.yml, ignore generated project)
 # Uncomment below if you regenerate .xcodeproj from project.yml each time:
-# *.xcodeproj
+*.xcodeproj
+project.yml
