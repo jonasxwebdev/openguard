@@ -27,6 +27,17 @@ final class NotificationManager {
         }
     }
 
+    /// Whether notifications are currently authorized.
+    func isAuthorized() async -> Bool {
+        let settings = await center.notificationSettings()
+        switch settings.authorizationStatus {
+        case .authorized, .provisional, .ephemeral:
+            return true
+        default:
+            return false
+        }
+    }
+
     // MARK: - Open Window Notifications
 
     /// Schedules the three notifications for an open window:

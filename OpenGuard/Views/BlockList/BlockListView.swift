@@ -40,6 +40,8 @@ struct BlockListView: View {
             selection: $activitySelection
         )
         .onChange(of: activitySelection) { _, newValue in
+            // Resetting the selection below re-triggers onChange with an empty value
+            guard !newValue.applicationTokens.isEmpty else { return }
             blockListStore.addApps(from: newValue)
             // Reset selection so the picker starts fresh next time
             activitySelection = FamilyActivitySelection()

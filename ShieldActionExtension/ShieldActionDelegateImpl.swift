@@ -66,8 +66,18 @@ class ShieldActionDelegateImpl: ShieldActionDelegate {
     ) {
         let store = SharedDataStore.shared
 
-        // Safety reset check
-        store.resetIfNewDay()
+        // Safety reset check (re-shields if a reset happened)
+        ShieldManager.shared.resetIfNewDayAndReshield()
+
+        // During an active downtime window the app is also shielded by the
+        // downtime store. Removing the per-app shield would not unblock it, so
+        // don't let the user burn an open for nothing.
+        if let downtime = store.loadDowntime().activeWindow(),
+           !downtime.isExcluded(applicationToken) {
+            logger.info("Downtime active — not consuming an open")
+            completionHandler(.close)
+            return
+        }
 
         // Find the matching blocked app using decoded token equality
         var app = store.findApp(byApplicationToken: applicationToken)
@@ -127,13 +137,23 @@ class ShieldActionDelegateImpl: ShieldActionDelegate {
         let calendar = Calendar.current
         let startComponents = calendar.dateComponents([.hour, .minute, .second], from: expiryDate)
 
+        // The interval must be at least the DeviceActivity minimum (15 min),
+        // otherwise `startMonitoring` throws `intervalTooShort`. A fixed end of
+        // 23:59:59 broke every open whose window expired after ~23:45. The end
+        // may wrap past midnight, which DeviceActivity handles as an overnight
+        // interval.
+        let endDate = expiryDate.addingTimeInterval(
+            TimeInterval((AppConstants.minimumScheduleIntervalMinutes + 1) * 60)
+        )
+        let endComponents = calendar.dateComponents([.hour, .minute, .second], from: endDate)
+
         let activityName = DeviceActivityName(
             AppConstants.relockActivityPrefix + appID.uuidString
         )
 
         let schedule = DeviceActivitySchedule(
             intervalStart: startComponents,
-            intervalEnd: DateComponents(hour: 23, minute: 59, second: 59),
+            intervalEnd: endComponents,
             repeats: false
         )
 

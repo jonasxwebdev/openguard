@@ -23,6 +23,11 @@ enum AppConstants {
     static let defaultOpensPerDay: Int = 3
     static let defaultTimeLimitPerOpen: TimeInterval = 600  // 10 minutes
 
+    // MARK: - DeviceActivity
+    /// The shortest interval `DeviceActivityCenter.startMonitoring` accepts.
+    /// Shorter schedules are rejected with `intervalTooShort`.
+    static let minimumScheduleIntervalMinutes: Int = 15
+
     // MARK: - Notification Identifiers
     static let notificationCategoryOpen = "OPEN_WINDOW"
     static let notificationUnlockedSuffix = "-unlocked"

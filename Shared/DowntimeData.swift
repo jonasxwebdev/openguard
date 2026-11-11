@@ -76,6 +76,55 @@ struct DowntimeWindow: Codable, Identifiable, Equatable {
         return sorted.map { weekdaySymbols[$0 - 1] }.joined(separator: ", ")
     }
 
+    /// Start time expressed as minutes since midnight.
+    var startTotalMinutes: Int { startHour * 60 + startMinute }
+
+    /// End time expressed as minutes since midnight.
+    var endTotalMinutes: Int { endHour * 60 + endMinute }
+
+    /// Length of the window in minutes, accounting for windows that cross midnight.
+    /// A window whose start equals its end has a duration of 0.
+    var durationMinutes: Int {
+        (endTotalMinutes - startTotalMinutes + 24 * 60) % (24 * 60)
+    }
+
+    /// Whether the window crosses midnight (e.g. 22:00 – 6:00).
+    var isOvernight: Bool {
+        endTotalMinutes < startTotalMinutes
+    }
+
+    /// Whether this window is active at the given date.
+    ///
+    /// For overnight windows, the portion after midnight belongs to the day the
+    /// window *started* on, so e.g. a Friday-only 22:00 – 6:00 window is active
+    /// on Saturday at 2:00, but not on Friday at 2:00.
+    func isActive(at date: Date, calendar: Calendar = .current) -> Bool {
+        guard isEnabled, durationMinutes > 0 else { return false }
+
+        let weekday = calendar.component(.weekday, from: date)
+        let minutes = calendar.component(.hour, from: date) * 60
+            + calendar.component(.minute, from: date)
+
+        if !isOvernight {
+            return appliesOn(weekday)
+                && minutes >= startTotalMinutes
+                && minutes < endTotalMinutes
+        }
+
+        // Before midnight: belongs to today.
+        if minutes >= startTotalMinutes && appliesOn(weekday) {
+            return true
+        }
+        // After midnight: belongs to the previous day.
+        let previousWeekday = weekday == 1 ? 7 : weekday - 1
+        return minutes < endTotalMinutes && appliesOn(previousWeekday)
+    }
+
+    /// Whether the given application token is on this window's allow list.
+    func isExcluded(_ token: ApplicationToken) -> Bool {
+        excludedTokens().contains(token)
+    }
+
     /// Decodes excluded app tokens.
     func excludedTokens() -> Set<ApplicationToken> {
         var tokens = Set<ApplicationToken>()
@@ -111,5 +160,13 @@ struct DowntimeData: Codable {
 
     static var empty: DowntimeData {
         DowntimeData(windows: [])
+    }
+
+    /// Returns the first enabled window that is active at the given date,
+    /// optionally ignoring a specific window (e.g. one that is just ending).
+    func activeWindow(at date: Date = Date(), excluding excludedID: UUID? = nil) -> DowntimeWindow? {
+        windows.first { window in
+            window.id != excludedID && window.isActive(at: date)
+        }
     }
 }

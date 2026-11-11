@@ -15,7 +15,11 @@ struct BlockedAppRow: View {
 
             // Opens info + status
             VStack(alignment: .trailing, spacing: 4) {
-                statusBadge
+                // Re-render when the open window expires so the "OPEN" badge
+                // doesn't stay visible after the app is blocked again.
+                TimelineView(.explicit(app.currentOpenExpiresAt.map { [$0] } ?? [])) { _ in
+                    statusBadge
+                }
 
                 HStack(spacing: 12) {
                     opensIndicator

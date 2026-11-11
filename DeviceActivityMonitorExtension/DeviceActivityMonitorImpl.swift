@@ -103,16 +103,20 @@ class DeviceActivityMonitorImpl: DeviceActivityMonitor {
         // Re-apply shields to all blocked apps
         ShieldManager.shared.applyAllShields()
 
-        // Cancel any lingering notifications from yesterday
-        NotificationManager.shared.cancelAllNotifications()
+        // Cancel any lingering open-window notifications from yesterday.
+        // Only cancel per-app notifications so downtime notifications
+        // (e.g. a downtime window starting at midnight) are not wiped out.
+        for app in SharedDataStore.shared.loadAllApps() {
+            NotificationManager.shared.cancelNotifications(for: app.id)
+        }
 
         logger.info("Daily reset complete")
     }
 
     /// Ticker: check for expired open windows and re-shield.
     private func handleTicker() {
-        // Also do a day-change safety check
-        SharedDataStore.shared.resetIfNewDay()
+        // Also do a day-change safety check (re-shields if a reset happened)
+        ShieldManager.shared.resetIfNewDayAndReshield()
 
         // Re-apply shields for any expired open windows
         ShieldManager.shared.reapplyExpiredShields()
@@ -149,10 +153,13 @@ class DeviceActivityMonitorImpl: DeviceActivityMonitor {
             return
         }
 
-        // Check if this window applies today
+        // Check if this window applies today. Downtime schedules repeat daily,
+        // so the day-of-week filter is applied here.
         let currentWeekday = Calendar.current.component(.weekday, from: Date())
         guard window.appliesOn(currentWeekday) else {
             logger.info("Downtime window does not apply today (weekday \(currentWeekday))")
+            // Another (overlapping) window might still need to be in effect.
+            ShieldManager.shared.reapplyDowntimeIfNeeded()
             return
         }
 
@@ -176,11 +183,16 @@ class DeviceActivityMonitorImpl: DeviceActivityMonitor {
         let downtimeData = SharedDataStore.shared.loadDowntime()
         let window = downtimeData.windows.first(where: { $0.id.uuidString == windowID })
 
-        // Check if any other downtime window is still active before removing shields
-        ShieldManager.shared.reapplyDowntimeIfNeeded()
+        // Check if any *other* downtime window is still active before removing shields.
+        // The ending window is excluded explicitly so a callback that fires a moment
+        // before the end minute doesn't keep its shields up until the next day.
+        ShieldManager.shared.reapplyDowntimeIfNeeded(excluding: window?.id)
 
-        // Send notification
-        if let window = window {
+        // Send notification — only if the window actually ran today. For windows
+        // restricted to certain days the schedule still fires every day.
+        let startDate = Date().addingTimeInterval(-Double(max(1, window?.durationMinutes ?? 1)) * 60)
+        let startWeekday = Calendar.current.component(.weekday, from: startDate)
+        if let window = window, window.isEnabled, window.appliesOn(startWeekday) {
             NotificationManager.shared.scheduleDowntimeEndNotification(
                 windowID: window.id,
                 timeRange: window.formattedTimeRange

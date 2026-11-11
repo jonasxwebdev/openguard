@@ -35,15 +35,12 @@ final class ShieldManager {
     }
 
     /// Applies shields to a specific set of application tokens.
+    /// Merges the given tokens into the existing shields (never removes any).
     func applyShields(for tokens: Set<ApplicationToken>) {
-        if tokens.isEmpty {
-            store.shield.applications = nil
-        } else {
-            // Merge with any existing shields
-            var current = store.shield.applications ?? Set<ApplicationToken>()
-            current.formUnion(tokens)
-            store.shield.applications = current
-        }
+        guard !tokens.isEmpty else { return }
+        var current = store.shield.applications ?? Set<ApplicationToken>()
+        current.formUnion(tokens)
+        store.shield.applications = current
     }
 
     /// Adds a single app's shield.
@@ -95,38 +92,21 @@ final class ShieldManager {
     }
 
     /// Checks if any downtime window is currently active and re-applies shields if needed.
-    /// Called when one window ends but another may still be active.
-    func reapplyDowntimeIfNeeded() {
+    /// Called when one window ends but another may still be active, and whenever
+    /// downtime settings change.
+    ///
+    /// - Parameter endingWindowID: A window that is ending right now and must not be
+    ///   considered active, even if the callback fires slightly before its end time.
+    func reapplyDowntimeIfNeeded(excluding endingWindowID: UUID? = nil) {
         let downtimeData = SharedDataStore.shared.loadDowntime()
-        let now = Date()
-        let calendar = Calendar.current
-        let currentWeekday = calendar.component(.weekday, from: now)
-        let currentHour = calendar.component(.hour, from: now)
-        let currentMinute = calendar.component(.minute, from: now)
-        let currentTotalMinutes = currentHour * 60 + currentMinute
 
-        for window in downtimeData.windows where window.isEnabled && window.appliesOn(currentWeekday) {
-            let startTotal = window.startHour * 60 + window.startMinute
-            let endTotal = window.endHour * 60 + window.endMinute
-
-            let isActive: Bool
-            if startTotal <= endTotal {
-                // Same-day window (e.g. 7:00–8:30)
-                isActive = currentTotalMinutes >= startTotal && currentTotalMinutes < endTotal
-            } else {
-                // Overnight window (e.g. 22:00–6:00)
-                isActive = currentTotalMinutes >= startTotal || currentTotalMinutes < endTotal
-            }
-
-            if isActive {
-                // Another window is still active — re-apply its shields
-                applyDowntimeShields(excluding: window.excludedTokens())
-                return
-            }
+        if let window = downtimeData.activeWindow(at: Date(), excluding: endingWindowID) {
+            // A window is active — (re-)apply its shields
+            applyDowntimeShields(excluding: window.excludedTokens())
+        } else {
+            // No active windows — remove shields
+            removeDowntimeShields()
         }
-
-        // No active windows — remove shields
-        removeDowntimeShields()
     }
 
     // MARK: - Re-shield After Open Window
@@ -144,12 +124,30 @@ final class ShieldManager {
     /// Called by the ticker in the Device Activity Monitor extension.
     func reapplyExpiredShields() {
         let expired = SharedDataStore.shared.expireOpenWindows()
-        for app in expired {
-            reapplyShield(for: app)
-        }
         if !expired.isEmpty {
-            logger.info("Re-applied shields for \(expired.count) expired window(s)")
+            logger.info("Expired \(expired.count) open window(s)")
         }
+        // Re-shield every blocked app that is not in an active open window,
+        // rather than only the apps that just expired. This also catches apps
+        // whose open window was cleared elsewhere (e.g. by a safety day reset
+        // in another process) and would otherwise never be re-shielded.
+        // Merge-only, so an unreadable store can never drop existing shields.
+        reshieldAppsOutsideOpenWindows()
+    }
+
+    /// Performs the day-change safety reset and, if a reset happened,
+    /// re-applies all shields so apps that were in an open window are
+    /// blocked again (the reset clears their open window).
+    func resetIfNewDayAndReshield() {
+        if SharedDataStore.shared.resetIfNewDay() {
+            reshieldAppsOutsideOpenWindows()
+        }
+    }
+
+    /// Adds shields for all blocked apps that are not currently in an open window.
+    private func reshieldAppsOutsideOpenWindows() {
+        let apps = SharedDataStore.shared.loadAllApps()
+        applyShields(for: resolveTokens(from: apps, excludeOpenWindows: true))
     }
 
     // MARK: - Helpers

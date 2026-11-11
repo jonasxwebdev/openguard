@@ -8,6 +8,7 @@ struct OpenGuardApp: App {
     @StateObject private var blockListStore = BlockListStore.shared
     @StateObject private var cloudSync = CloudSyncManager.shared
     @StateObject private var downtimeStore = DowntimeStore.shared
+    @Environment(\.scenePhase) private var scenePhase
 
     private let logger = Logger(subsystem: "com.jonasreidel.openguard", category: "App")
 
@@ -21,6 +22,23 @@ struct OpenGuardApp: App {
                     await initialize()
                 }
         }
+        .onChange(of: scenePhase) { _, newPhase in
+            // The extensions update state (opens consumed, windows expired,
+            // daily reset) while the app is in the background. Refresh when
+            // returning to the foreground so the UI isn't stale.
+            // (Returning from the background goes background → inactive → active,
+            // so check only the new phase.)
+            if newPhase == .active {
+                refreshOnForeground()
+            }
+        }
+    }
+
+    private func refreshOnForeground() {
+        ShieldManager.shared.resetIfNewDayAndReshield()
+        ShieldManager.shared.reapplyExpiredShields()
+        blockListStore.reload()
+        downtimeStore.reload()
     }
 
     private func initialize() async {

@@ -156,6 +156,16 @@ final class CloudSyncManager: ObservableObject {
         isOnboardingCompleted = true
     }
 
+    /// Clears the onboarding-completed flag locally and in iCloud (debug use).
+    /// Both stores must be cleared because `checkOnboardingCompleted` ORs them.
+    func resetOnboarding() {
+        UserDefaults(suiteName: AppConstants.appGroupIdentifier)?
+            .removeObject(forKey: AppConstants.onboardingCompletedKey)
+        store.removeObject(forKey: AppConstants.onboardingCompletedKey)
+        store.synchronize()
+        isOnboardingCompleted = false
+    }
+
     /// Reads the persisted onboarding state from UserDefaults / iCloud.
     private func checkOnboardingCompleted() -> Bool {
         let local = UserDefaults(suiteName: AppConstants.appGroupIdentifier)?

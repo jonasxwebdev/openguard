@@ -85,8 +85,8 @@ open OpenGuard.xcodeproj
 
 Each blocked app can be individually configured:
 
-- **Opens per day**: 1–10 (default: 3)
-- **Time per open**: 5min, 10min, 15min, 30min, or custom (default: 10 minutes)
+- **Opens per day**: 1–20 (default: 3)
+- **Time per open**: 5min, 10min, 15min, or custom 1–120 minutes (default: 10 minutes)
 
 Settings are backed up via `NSUbiquitousKeyValueStore` (iCloud Key-Value Store) for recovery after reinstalls.
 

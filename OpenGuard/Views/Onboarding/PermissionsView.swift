@@ -78,6 +78,12 @@ struct PermissionsView: View {
             .padding(.horizontal, 24)
             .padding(.bottom, 48)
         }
+        .task {
+            // Reflect permissions that were already granted (e.g. when
+            // onboarding is shown again) instead of always showing "Enable".
+            familyControlsGranted = AuthorizationCenter.shared.authorizationStatus == .approved
+            notificationsGranted = await NotificationManager.shared.isAuthorized()
+        }
     }
 
     // MARK: - Permission Requests

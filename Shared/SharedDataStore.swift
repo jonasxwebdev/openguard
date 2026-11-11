@@ -151,8 +151,15 @@ final class SharedDataStore {
     /// Adds a new blocked app to the list.
     func addApp(_ app: BlockedApp) {
         var data = load()
-        // Prevent duplicates by token data
-        guard !data.apps.contains(where: { $0.applicationTokenData == app.applicationTokenData }) else {
+        // Prevent duplicates — compare decoded tokens (encoded bytes are not
+        // guaranteed to be identical for the same token), falling back to bytes.
+        let newToken = app.applicationToken()
+        let isDuplicate = data.apps.contains { existing in
+            if existing.applicationTokenData == app.applicationTokenData { return true }
+            guard let newToken, let existingToken = existing.applicationToken() else { return false }
+            return existingToken == newToken
+        }
+        guard !isDuplicate else {
             logger.info("App already in block list, skipping add")
             return
         }
@@ -178,6 +185,31 @@ final class SharedDataStore {
         data.apps[index] = app
         save(data)
         return app
+    }
+
+    /// Updates only the user-editable settings of an app (name, opens per day,
+    /// time limit), preserving the latest runtime state on disk.
+    ///
+    /// Use this from UI code holding a possibly stale copy of the app, so that
+    /// `opensUsedToday` / `currentOpenExpiresAt` changes made in the meantime by
+    /// the extensions (opens consumed, windows expired, daily reset) are not
+    /// overwritten.
+    @discardableResult
+    func updateSettings(of app: BlockedApp) -> BlockedApp? {
+        var data = load()
+        guard let index = data.apps.firstIndex(where: { $0.id == app.id }) else { return nil }
+        var stored = data.apps[index]
+        guard stored.displayName != app.displayName
+                || stored.opensPerDay != app.opensPerDay
+                || stored.timeLimitPerOpen != app.timeLimitPerOpen else {
+            return stored
+        }
+        stored.displayName = app.displayName
+        stored.opensPerDay = app.opensPerDay
+        stored.timeLimitPerOpen = app.timeLimitPerOpen
+        data.apps[index] = stored
+        save(data)
+        return stored
     }
 
     /// Consumes one open for the given app ID.
@@ -238,13 +270,19 @@ final class SharedDataStore {
     /// Checks whether today's date differs from `lastResetDate` (by calendar day).
     /// If so, performs a reset. Called on app launch and extension wake-ups
     /// as a safety net in case the midnight DeviceActivity schedule didn't fire.
-    func resetIfNewDay() {
+    ///
+    /// - Returns: `true` if a reset was performed. Callers should then re-apply
+    ///   shields, because the reset clears any active open windows.
+    @discardableResult
+    func resetIfNewDay() -> Bool {
         let data = load()
         let calendar = Calendar.current
         if !calendar.isDateInToday(data.lastResetDate) {
             logger.info("New day detected — performing safety reset")
             resetAllOpens()
+            return true
         }
+        return false
     }
 
     // MARK: - Downtime Data

@@ -3,6 +3,8 @@ import SwiftUI
 /// Global app settings screen.
 struct SettingsView: View {
     @EnvironmentObject var cloudSync: CloudSyncManager
+    @EnvironmentObject var blockListStore: BlockListStore
+    @EnvironmentObject var downtimeStore: DowntimeStore
     @State private var showRestoreAlert = false
     @State private var restoreResult = ""
 
@@ -34,7 +36,19 @@ struct SettingsView: View {
                 }
 
                 Button {
-                    let restored = cloudSync.restoreFromCloud()
+                    let restoredApps = cloudSync.restoreFromCloud()
+                    let restoredDowntime = cloudSync.restoreDowntimeFromCloud()
+                    let restored = restoredApps || restoredDowntime
+                    if restoredApps {
+                        // Shield the restored apps and refresh the UI
+                        ShieldManager.shared.applyAllShields()
+                        blockListStore.reload()
+                    }
+                    if restoredDowntime {
+                        downtimeStore.reload()
+                        downtimeStore.scheduleAllActivities()
+                        ShieldManager.shared.reapplyDowntimeIfNeeded()
+                    }
                     restoreResult = restored
                         ? "Settings restored from iCloud!"
                         : "No iCloud backup found or data is empty."
@@ -60,7 +74,7 @@ struct SettingsView: View {
                         .foregroundStyle(.secondary)
                 }
 
-                Link(destination: URL(string: "https://github.com/jonasreidel/openguard")!) {
+                Link(destination: URL(string: "https://github.com/jonasxwebdev/openguard")!) {
                     Label("Source Code", systemImage: "chevron.left.forwardslash.chevron.right")
                 }
             }
@@ -69,12 +83,13 @@ struct SettingsView: View {
             #if DEBUG
             Section("Debug") {
                 Button("Reset Onboarding") {
-                    UserDefaults(suiteName: AppConstants.appGroupIdentifier)?
-                        .removeObject(forKey: AppConstants.onboardingCompletedKey)
+                    cloudSync.resetOnboarding()
                 }
 
                 Button("Reset All Opens (Daily Reset)") {
                     SharedDataStore.shared.resetAllOpens()
+                    ShieldManager.shared.applyAllShields()
+                    blockListStore.reload()
                 }
 
                 Button("Force Re-apply All Shields") {
@@ -86,6 +101,7 @@ struct SettingsView: View {
                     let data = BlockListData.empty
                     SharedDataStore.shared.save(data)
                     ShieldManager.shared.removeAllShields()
+                    blockListStore.reload()
                 } label: {
                     Text("Clear All Data & Shields")
                 }
@@ -105,5 +121,7 @@ struct SettingsView: View {
     NavigationStack {
         SettingsView()
             .environmentObject(CloudSyncManager.shared)
+            .environmentObject(BlockListStore.shared)
+            .environmentObject(DowntimeStore.shared)
     }
 }

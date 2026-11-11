@@ -42,13 +42,20 @@ struct DowntimeDetailView: View {
     var body: some View {
         Form {
             // MARK: - Time
-            Section("Time") {
+            Section {
                 DatePicker("Start", selection: $startTime, displayedComponents: .hourAndMinute)
                 DatePicker("End", selection: $endTime, displayedComponents: .hourAndMinute)
+            } header: {
+                Text("Time")
+            } footer: {
+                if durationMinutes < AppConstants.minimumScheduleIntervalMinutes {
+                    Text("Downtime must last at least \(AppConstants.minimumScheduleIntervalMinutes) minutes.")
+                        .foregroundStyle(.red)
+                }
             }
 
             // MARK: - Repeat
-            Section("Repeat") {
+            Section {
                 Toggle("Every Day", isOn: $isEveryDay)
 
                 if !isEveryDay {
@@ -71,6 +78,13 @@ struct DowntimeDetailView: View {
                             }
                         }
                     }
+                }
+            } header: {
+                Text("Repeat")
+            } footer: {
+                if !isEveryDay && selectedDays.isEmpty {
+                    Text("Select at least one day.")
+                        .foregroundStyle(.red)
                 }
             }
 
@@ -124,13 +138,13 @@ struct DowntimeDetailView: View {
                     save()
                 }
                 .fontWeight(.semibold)
+                .disabled(!isValid)
             }
 
             if isNew {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") {
-                        // Remove the window that was pre-added
-                        downtimeStore.removeWindow(window)
+                        // New windows aren't persisted until saved — nothing to clean up
                         dismiss()
                     }
                 }
@@ -141,14 +155,34 @@ struct DowntimeDetailView: View {
             selection: $exclusionSelection
         )
         .onChange(of: exclusionSelection) { _, newValue in
+            // Resetting the selection below re-triggers onChange with an empty value
+            guard !newValue.applicationTokens.isEmpty else { return }
             addExcludedApps(from: newValue)
             exclusionSelection = FamilyActivitySelection()
         }
     }
 
+    // MARK: - Validation
+
+    /// Length of the edited window in minutes (handles windows crossing midnight).
+    private var durationMinutes: Int {
+        let calendar = Calendar.current
+        let start = calendar.component(.hour, from: startTime) * 60 + calendar.component(.minute, from: startTime)
+        let end = calendar.component(.hour, from: endTime) * 60 + calendar.component(.minute, from: endTime)
+        return (end - start + 24 * 60) % (24 * 60)
+    }
+
+    /// DeviceActivity rejects schedules shorter than 15 minutes, and an empty
+    /// day selection would silently turn into "every day".
+    private var isValid: Bool {
+        durationMinutes >= AppConstants.minimumScheduleIntervalMinutes
+            && (isEveryDay || !selectedDays.isEmpty)
+    }
+
     // MARK: - Actions
 
     private func save() {
+        guard isValid else { return }
         let calendar = Calendar.current
         window.startHour = calendar.component(.hour, from: startTime)
         window.startMinute = calendar.component(.minute, from: startTime)
@@ -156,7 +190,16 @@ struct DowntimeDetailView: View {
         window.endMinute = calendar.component(.minute, from: endTime)
         window.activeDays = isEveryDay ? [] : selectedDays
 
-        downtimeStore.updateWindow(window)
+        if isNew {
+            downtimeStore.addWindow(window)
+        } else {
+            // Keep the enabled state the user may have toggled in the list
+            // while this editor was open.
+            if let stored = downtimeStore.windows.first(where: { $0.id == window.id }) {
+                window.isEnabled = stored.isEnabled
+            }
+            downtimeStore.updateWindow(window)
+        }
         dismiss()
     }
 
@@ -164,8 +207,8 @@ struct DowntimeDetailView: View {
         for token in selection.applicationTokens {
             guard let tokenData = try? JSONEncoder().encode(token) else { continue }
 
-            // Skip duplicates
-            if window.excludedAppTokensData.contains(tokenData) { continue }
+            // Skip duplicates (compare decoded tokens — encoded bytes may differ)
+            if window.excludedAppTokensData.contains(tokenData) || window.excludedTokens().contains(token) { continue }
 
             window.excludedAppTokensData.append(tokenData)
             window.excludedAppNames.append("App") // Generic name — token renders as label in shield
@@ -173,9 +216,12 @@ struct DowntimeDetailView: View {
     }
 
     private func removeExcludedApp(at index: Int) {
-        guard index < window.excludedAppTokensData.count else { return }
+        guard window.excludedAppTokensData.indices.contains(index) else { return }
         window.excludedAppTokensData.remove(at: index)
-        window.excludedAppNames.remove(at: index)
+        // Names are a parallel array that may be shorter (e.g. older data)
+        if window.excludedAppNames.indices.contains(index) {
+            window.excludedAppNames.remove(at: index)
+        }
     }
 }
 

@@ -95,8 +95,9 @@ struct DowntimeListView: View {
     // MARK: - Actions
 
     private func addNewWindow() {
-        let window = downtimeStore.addWindow()
-        newWindow = window
+        // Don't persist yet — the window is only saved when the user taps Save,
+        // so backing out of the editor doesn't leave a stray default window.
+        newWindow = DowntimeWindow.makeDefault()
         navigateToNew = true
     }
 }

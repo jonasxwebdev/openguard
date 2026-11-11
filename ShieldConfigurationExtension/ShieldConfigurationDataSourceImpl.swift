@@ -27,8 +27,20 @@ class ShieldConfigurationDataSourceImpl: ShieldConfigurationDataSource {
 
         let store = SharedDataStore.shared
 
-        // Safety reset check
+        // Safety reset check. Shields are not touched from this (render-only)
+        // extension; apps whose open window this clears are re-shielded by the
+        // relock / ticker activities, which re-shield every app outside an
+        // active open window.
         store.resetIfNewDay()
+
+        // During an active downtime window, opens can't unblock the app, so show
+        // a downtime shield without an "Open" button.
+        if let downtime = store.loadDowntime().activeWindow() {
+            let isAllowed = application.token.map { downtime.isExcluded($0) } ?? false
+            if !isAllowed {
+                return buildDowntimeConfiguration(for: downtime)
+            }
+        }
 
         // Match using decoded ApplicationToken equality (robust across processes)
         var matchedApp: BlockedApp?
@@ -65,10 +77,18 @@ class ShieldConfigurationDataSourceImpl: ShieldConfigurationDataSource {
     // MARK: - Web Domain Shield
 
     override func configuration(shielding webDomain: WebDomain) -> ShieldConfiguration {
-        return buildFallbackConfiguration()
+        return webDomainConfiguration()
     }
 
     override func configuration(shielding webDomain: WebDomain, in category: ActivityCategory) -> ShieldConfiguration {
+        return webDomainConfiguration()
+    }
+
+    /// Web domains are only ever shielded by downtime.
+    private func webDomainConfiguration() -> ShieldConfiguration {
+        if let downtime = SharedDataStore.shared.loadDowntime().activeWindow() {
+            return buildDowntimeConfiguration(for: downtime)
+        }
         return buildFallbackConfiguration()
     }
 
@@ -105,13 +125,7 @@ class ShieldConfigurationDataSourceImpl: ShieldConfigurationDataSource {
             color: UIColor(red: 0.2, green: 0.404, blue: 0.231, alpha: 1.0)
         )
 
-        let bundle = Bundle(for: ShieldConfigurationDataSourceImpl.self)
-        let appLogo: UIImage?
-        if let logoURL = bundle.url(forResource: "AppLogo", withExtension: "png") {
-            appLogo = UIImage(contentsOfFile: logoURL.path)
-        } else {
-            appLogo = UIImage(systemName: "lock.shield.fill")
-        }
+        let appLogo = loadAppLogo()
 
         return ShieldConfiguration(
             backgroundBlurStyle: .systemThickMaterial,
@@ -123,6 +137,42 @@ class ShieldConfigurationDataSourceImpl: ShieldConfigurationDataSource {
             primaryButtonBackgroundColor: opensRemaining > 0 ? UIColor(red: 1.0, green: 0.0, blue: 0.208, alpha: 1.0) : nil,
             secondaryButtonLabel: secondaryButton
         )
+    }
+
+    private func buildDowntimeConfiguration(for window: DowntimeWindow) -> ShieldConfiguration {
+        let title = ShieldConfiguration.Label(
+            text: "Downtime is active",
+            color: .white
+        )
+
+        let subtitle = ShieldConfiguration.Label(
+            text: "All apps are blocked until \(String(format: "%d:%02d", window.endHour, window.endMinute)).",
+            color: UIColor.lightGray
+        )
+
+        let secondaryButton = ShieldConfiguration.Label(
+            text: "Get Back to Reality",
+            color: UIColor(red: 0.2, green: 0.404, blue: 0.231, alpha: 1.0)
+        )
+
+        return ShieldConfiguration(
+            backgroundBlurStyle: .systemThickMaterial,
+            backgroundColor: UIColor.black.withAlphaComponent(0.85),
+            icon: loadAppLogo(),
+            title: title,
+            subtitle: subtitle,
+            primaryButtonLabel: nil,
+            primaryButtonBackgroundColor: nil,
+            secondaryButtonLabel: secondaryButton
+        )
+    }
+
+    private func loadAppLogo() -> UIImage? {
+        let bundle = Bundle(for: ShieldConfigurationDataSourceImpl.self)
+        if let logoURL = bundle.url(forResource: "AppLogo", withExtension: "png") {
+            return UIImage(contentsOfFile: logoURL.path)
+        }
+        return UIImage(systemName: "lock.shield.fill")
     }
 
     private func buildFallbackConfiguration(appCount: Int = 0) -> ShieldConfiguration {
@@ -142,13 +192,7 @@ class ShieldConfigurationDataSourceImpl: ShieldConfigurationDataSource {
             color: UIColor(red: 0.2, green: 0.404, blue: 0.231, alpha: 1.0)
         )
 
-        let bundle = Bundle(for: ShieldConfigurationDataSourceImpl.self)
-        let appLogo: UIImage?
-        if let logoURL = bundle.url(forResource: "AppLogo", withExtension: "png") {
-            appLogo = UIImage(contentsOfFile: logoURL.path)
-        } else {
-            appLogo = UIImage(systemName: "lock.shield.fill")
-        }
+        let appLogo = loadAppLogo()
 
         return ShieldConfiguration(
             backgroundBlurStyle: .systemThickMaterial,

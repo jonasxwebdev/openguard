@@ -29,17 +29,20 @@ final class DowntimeStore: ObservableObject {
 
     // MARK: - CRUD
 
-    /// Adds a new default downtime window and returns it for editing.
-    func addWindow() -> DowntimeWindow {
-        let window = DowntimeWindow.makeDefault()
+    /// Persists a new downtime window (called when the user saves a new window).
+    func addWindow(_ window: DowntimeWindow) {
         var data = SharedDataStore.shared.loadDowntime()
+        guard !data.windows.contains(where: { $0.id == window.id }) else {
+            updateWindow(window)
+            return
+        }
         data.windows.append(window)
         SharedDataStore.shared.saveDowntime(data)
         reload()
         scheduleAllActivities()
         syncToCloud()
+        ShieldManager.shared.reapplyDowntimeIfNeeded()
         logger.info("Added downtime window \(window.id)")
-        return window
     }
 
     /// Removes a downtime window by ID.
@@ -56,18 +59,20 @@ final class DowntimeStore: ObservableObject {
         reload()
         syncToCloud()
 
-        // If no windows remain active, remove downtime shields
-        if !windows.contains(where: { $0.isEnabled }) {
-            ShieldManager.shared.removeDowntimeShields()
-        }
+        // Re-evaluate shields: removes them if the deleted window was the
+        // active one, keeps them if another window is still active.
+        ShieldManager.shared.reapplyDowntimeIfNeeded()
 
         logger.info("Removed downtime window \(window.id)")
     }
 
     /// Removes windows at the given index set (for List swipe-to-delete).
     func removeWindows(at offsets: IndexSet) {
-        for index in offsets {
-            removeWindow(windows[index])
+        // Resolve windows first: `removeWindow` reloads `windows`, which would
+        // shift the remaining indices.
+        let windowsToRemove = offsets.compactMap { windows.indices.contains($0) ? windows[$0] : nil }
+        for window in windowsToRemove {
+            removeWindow(window)
         }
     }
 
@@ -80,19 +85,19 @@ final class DowntimeStore: ObservableObject {
         reload()
         scheduleAllActivities()
         syncToCloud()
+
+        // Apply/remove/refresh shields if the change affects a window that is
+        // active right now (time, days, allowed apps or enabled state changed).
+        ShieldManager.shared.reapplyDowntimeIfNeeded()
         logger.info("Updated downtime window \(window.id)")
     }
 
     /// Toggles a window's enabled state.
     func toggleWindow(_ window: DowntimeWindow) {
-        var updated = window
+        // Use the latest stored copy so the toggle doesn't overwrite other edits.
+        var updated = windows.first(where: { $0.id == window.id }) ?? window
         updated.isEnabled.toggle()
         updateWindow(updated)
-
-        // If disabling and no other windows are active, clear shields
-        if !updated.isEnabled && !windows.contains(where: { $0.isEnabled }) {
-            ShieldManager.shared.removeDowntimeShields()
-        }
     }
 
     // MARK: - DeviceActivity Scheduling

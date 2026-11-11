@@ -1,6 +1,7 @@
 import Foundation
 import FamilyControls
 import ManagedSettings
+import DeviceActivity
 import Combine
 import os.log
 
@@ -57,15 +58,20 @@ final class BlockListStore: ObservableObject {
     /// Each selected app is immediately shielded.
     func addApps(from selection: FamilyActivitySelection) {
         let tokens = selection.applicationTokens
+        guard !tokens.isEmpty else { return }
 
+        var addedCount = 0
         for token in tokens {
             guard let tokenData = try? JSONEncoder().encode(token) else {
                 logger.error("Failed to encode application token")
                 continue
             }
 
-            // Check for duplicates
-            guard !apps.contains(where: { $0.applicationTokenData == tokenData }) else {
+            // Check for duplicates (compare decoded tokens — encoded bytes
+            // are not guaranteed to be identical for the same app)
+            guard !apps.contains(where: {
+                $0.applicationTokenData == tokenData || $0.applicationToken() == token
+            }) else {
                 continue
             }
 
@@ -83,11 +89,12 @@ final class BlockListStore: ObservableObject {
 
             // Immediately shield the app
             ShieldManager.shared.addShield(for: token)
+            addedCount += 1
         }
 
         reload()
         syncToCloud()
-        logger.info("Added \(tokens.count) app(s) to block list")
+        logger.info("Added \(addedCount) app(s) to block list")
     }
 
     // MARK: - Removing Apps
@@ -102,6 +109,11 @@ final class BlockListStore: ObservableObject {
         // Cancel any pending notifications
         NotificationManager.shared.cancelNotifications(for: app.id)
 
+        // Stop a pending relock activity to free the DeviceActivity slot
+        DeviceActivityCenter().stopMonitoring([
+            DeviceActivityName(AppConstants.relockActivityPrefix + app.id.uuidString)
+        ])
+
         // Remove from store
         SharedDataStore.shared.removeApp(by: app.id)
 
@@ -112,16 +124,22 @@ final class BlockListStore: ObservableObject {
 
     /// Removes an app at the given index set (for List swipe-to-delete).
     func removeApps(at offsets: IndexSet) {
-        for index in offsets {
-            removeApp(apps[index])
+        // Resolve the apps first: `removeApp` reloads `apps`, which would shift
+        // the remaining indices (wrong app removed / out-of-range crash).
+        let appsToRemove = offsets.compactMap { apps.indices.contains($0) ? apps[$0] : nil }
+        for app in appsToRemove {
+            removeApp(app)
         }
     }
 
     // MARK: - Updating Apps
 
-    /// Updates settings for a specific app.
+    /// Updates the user-editable settings (opens per day, time limit) of an app.
+    /// Runtime state (opens used, current open window) is taken from disk so a
+    /// stale copy held by a view can't roll back changes made by the extensions
+    /// or the daily reset.
     func updateApp(_ app: BlockedApp) {
-        SharedDataStore.shared.updateApp(app)
+        SharedDataStore.shared.updateSettings(of: app)
         reload()
         syncToCloud()
     }
