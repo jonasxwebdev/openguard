@@ -1,0 +1,105 @@
+{
+  "fill-specializations" : [
+    {
+      "value" : {
+        "linear-gradient" : [
+          "srgb:0.02745,0.02745,0.02745,1.00000",
+          "display-p3:0.22196,0.22196,0.22196,1.00000"
+        ],
+        "orientation" : {
+          "start" : {
+            "x" : 0.5,
+            "y" : 0
+          },
+          "stop" : {
+            "x" : 0.5,
+            "y" : 0.7
+          }
+        }
+      }
+    },
+    {
+      "appearance" : "light",
+      "value" : {
+        "linear-gradient" : [
+          "srgb:0.99608,0.99608,0.99608,1.00000",
+          "display-p3:0.88514,0.88514,0.88514,1.00000"
+        ],
+        "orientation" : {
+          "start" : {
+            "x" : 0.5,
+            "y" : 0
+          },
+          "stop" : {
+            "x" : 0.5,
+            "y" : 0.7
+          }
+        }
+      }
+    }
+  ],
+  "groups" : [
+    {
+      "blur-material" : 0.5,
+      "layers" : [
+        {
+          "fill" : {
+            "solid" : "display-p3:1.00000,0.00000,0.20784,1.00000"
+          },
+          "image-name" : "shield-solid-02.png",
+          "name" : "shield-solid-02",
+          "position" : {
+            "scale" : 0.5,
+            "translation-in-points" : [
+              0,
+              0
+            ]
+          }
+        }
+      ],
+      "shadow" : {
+        "kind" : "neutral",
+        "opacity" : 0.5
+      },
+      "translucency" : {
+        "enabled" : true,
+        "value" : 0.7
+      }
+    },
+    {
+      "blur-material" : 0.5,
+      "layers" : [
+        {
+          "fill" : {
+            "solid" : "srgb:0.73333,0.69412,0.57647,1.00000"
+          },
+          "image-name" : "shield-solid-01 2.png",
+          "name" : "shield-solid-01 2",
+          "position" : {
+            "scale" : 0.5,
+            "translation-in-points" : [
+              0,
+              0
+            ]
+          }
+        }
+      ],
+      "lighting" : "individual",
+      "shadow" : {
+        "kind" : "neutral",
+        "opacity" : 0.5
+      },
+      "specular" : true,
+      "translucency" : {
+        "enabled" : true,
+        "value" : 0.2
+      }
+    }
+  ],
+  "supported-platforms" : {
+    "circles" : [
+      "watchOS"
+    ],
+    "squares" : "shared"
+  }
+}
